@@ -16,7 +16,7 @@ def extractSkin(image):
     skinMask = cv2.inRange(img, lower_threshold, upper_threshold)
 
     kernel = np.ones((3, 3), np.uint8)
-    skinMask=cv2.dilate(skinMask, kernel, iterations=1)
+    skinMask=cv2.dilate(skinMask, kernel, iterations=2)
 
     # Cleaning up mask using Gaussian Filter
     skinMask = cv2.GaussianBlur(skinMask, (5, 5), 100)
@@ -31,19 +31,17 @@ def extractSkin(image):
 def get_contours(roi, canvas):
     developer=np.zeros_like(roi)
     gray=cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-    edged = cv2.Canny(gray, 120, 200)
-    # filled = cv2.fillPoly(edged)
+    edged = cv2.Canny(gray, 200, 200)
+    _, binary = cv2.threshold(gray, 1, 255, cv2.THRESH_BINARY)
 
-    _, binary = cv2.threshold(gray, 50, 255, 0)
-
-    contours, _ = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     if len(contours) != 0:
         sorted_cnts = sorted(contours, key=cv2.contourArea, reverse=True)
         hull = cv2.convexHull(sorted_cnts[0], returnPoints=False)
         defects = cv2.convexityDefects(sorted_cnts[0], hull)
 
-        cv2.drawContours(developer, sorted_cnts[0], -1, (0,255,0), 3)
+        cv2.drawContours(developer, sorted_cnts[0], -1, (0,255,0), thickness=cv2.FILLED)
 
         extLeft = tuple(sorted_cnts[0][sorted_cnts[0][:, :, 0].argmin()][0])
         extRight = tuple(sorted_cnts[0][sorted_cnts[0][:, :, 0].argmax()][0])
@@ -51,9 +49,9 @@ def get_contours(roi, canvas):
         extBot = tuple(sorted_cnts[0][sorted_cnts[0][:, :, 1].argmax()][0])
 
         cv2.circle(developer, extLeft, 8, (255, 255, 255), -1)
-        # cv2.circle(frame, extRight, 8, (255, 255, 255), -1)
+        cv2.circle(developer, extRight, 8, (255, 255, 255), -1)
         cv2.circle(developer, extTop, 8, (255, 255, 255), -1)
-        # cv2.circle(frame, extBot, 8, (255, 255, 255), -1)
+        cv2.circle(developer, extBot, 8, (255, 255, 255), -1)
 
         point_defect=[]
 
@@ -73,9 +71,9 @@ def get_contours(roi, canvas):
 
                 area = math.sqrt(s*(s - s_e)*(s - e_f)*(s - f_s))
                 d = (2 * area) / s_e        #height = 2*area/base
-                angle = math.acos((e_f ** 2 + f_s ** 2 - s_e ** 2) / (2 * e_f * f_s)) * 57
+                # angle = math.acos((e_f ** 2 + f_s ** 2 - s_e ** 2) / (2 * e_f * f_s)) * 57
 
-                if d>=25 and angle<=90:
+                if d>=20:
                     cv2.circle(developer, far, 3, [0, 0, 255], -1)
                     point_defect.append(far)
 
@@ -96,8 +94,9 @@ def get_contours(roi, canvas):
                 cv2.circle(canvas, extTop, 2, (0, 0, 255), 4)
 
             cv2.imshow("Developer's Window", developer)
-            # canny_images = np.hstack((gray, edged, binary))
-            # cv2.imshow("Test", canny_images)
+            canny_images = np.hstack((gray, edged, binary))
+            cv2.imshow("Test", canny_images)
+
             return canvas
 
     return np.zeros_like(roi)
