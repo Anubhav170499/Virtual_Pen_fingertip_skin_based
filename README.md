@@ -1,4 +1,4 @@
-# Virtual_Pen_fingertip_skin_based
+# Virtual Pen
 
 A real time skin colour based computer vision project where a person can sketch/draw on the screen using his/her hand.
 
